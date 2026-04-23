@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# 虚拟环境
+venv/
+ENV/
+env/
+.venv
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# 敏感配置文件（重要！）
+.env
+.env.local
+.env.production
+
+# 项目特定
+chroma_db/
+*.log
+screenshots/
+reports/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# 其他
+*.bak
+*.tmp

@@ -5,12 +5,12 @@
 
 import os
 # 从 config.py 读取配置，避免硬编码
-from config import DEEPSEEK_API_KEY, DEEPSEEK_MODEL, DEEPSEEK_BASE_URL
+from config import OPENAI_API_KEY, OPENAI_MODEL, OPENAI_BASE_URL
 
 # 设置 DeepEval 需要的环境变量
-os.environ["OPENAI_API_KEY"] = DEEPSEEK_API_KEY
-os.environ["OPENAI_MODEL_NAME"] = DEEPSEEK_MODEL
-os.environ["OPENAI_BASE_URL"] = DEEPSEEK_BASE_URL
+os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
+os.environ["OPENAI_MODEL_NAME"] = OPENAI_MODEL
+os.environ["OPENAI_BASE_URL"] = OPENAI_BASE_URL
 
 import yaml
 import json

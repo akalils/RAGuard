@@ -22,7 +22,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 from config import (
-    DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, DEEPSEEK_MODEL,
+    OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL,
     DASHSCOPE_API_KEY, EMBEDDING_MODEL,
     CHROMA_DB_PATH, DOCS_DIR,
 )
@@ -35,9 +35,9 @@ from config import (
 def get_llm():
     from langchain_openai import ChatOpenAI
     return ChatOpenAI(
-        model=DEEPSEEK_MODEL,
-        api_key=DEEPSEEK_API_KEY,
-        base_url=DEEPSEEK_BASE_URL,
+        model=OPENAI_MODEL,
+        api_key=OPENAI_API_KEY,
+        base_url=OPENAI_BASE_URL,
         temperature=0.1,
     )
 
