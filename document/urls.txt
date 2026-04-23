@@ -1,0 +1,8 @@
+# 中国法律法规网页数据源
+# 在此文件中添加法律网页URL，每行一个
+# 以 # 开头的行将被忽略
+
+# 国家法律法规数据库示例（请替换为实际可访问的URL）
+# https://flk.npc.gov.cn/detail2.html?MmM5MDlmZGQ2NzhiZjE3OTAxNjc4YmY4NzdjOTBiNGE
+
+# 添加更多法律网页URL...
