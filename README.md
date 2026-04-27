@@ -41,3 +41,30 @@ deepeval test run test_rag_batch.py
 
 # 6. 生成评测报告
 python generate_report.py
+```
+
+## 评测数据集
+
+法律领域评测数据集（`eval_dataset.yaml`），覆盖劳动法与刑法两大类别，按 easy/medium/hard 三个难度分级。
+
+## 项目结构
+
+```
+RAGuard/
+├── rag_pipeline.py       # RAG核心流程（文档加载、分块、检索、生成）
+├── config.py             # 配置管理
+├── api.py                # FastAPI接口
+├── eval_dataset.yaml     # 评测数据集
+├── test_rag_batch.py     # DeepEval批量评测脚本
+├── generate_report.py    # 评测报告生成器
+├── eval_report.md        # 示例评测报告
+├── document/             # 法律文档（劳动法、刑法）
+└── chroma_db/            # ChromaDB向量存储
+```
+
+## 后续规划
+
+- [ ] Prompt注入安全测试模块
+- [ ] A/B对比评测能力
+- [ ] 评测结果持久化（SQLite）
+- [ ] Web评测看板（Streamlit）
