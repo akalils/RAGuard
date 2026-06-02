@@ -1,0 +1,84 @@
+name: RAG Evaluation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'rag_pipeline.py'
+      - 'ragas_eval.py'
+      - 'test_rag_ragas.py'
+      - 'generate_report.py'
+      - 'eval_dataset.yaml'
+      - 'document/**'
+      - 'requirements.txt'
+      - '.github/workflows/rag-eval.yml'
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * 1'
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Cache HuggingFace models
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: hf-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+          restore-keys: hf-${{ runner.os }}-
+
+      - name: Cache vector store
+        uses: actions/cache@v4
+        with:
+          path: chroma_db
+          key: vs-${{ runner.os }}-${{ hashFiles('document/**/*.docx', 'rag_pipeline.py', 'requirements.txt') }}
+          restore-keys: vs-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run evaluation
+        env:
+          OPENAI_API_KEY:    ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL:   ${{ secrets.OPENAI_BASE_URL }}
+          OPENAI_MODEL:      ${{ secrets.OPENAI_MODEL }}
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+        run: |
+          echo "OPENAI_MODEL=$OPENAI_MODEL"
+          echo "OPENAI_BASE_URL=$OPENAI_BASE_URL"
+          test -n "$OPENAI_API_KEY" || (echo "::error::OPENAI_API_KEY is empty" && exit 1)
+          python generate_report.py 2>&1 | tee eval_run.log
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rag-eval-report-${{ github.run_id }}
+          path: |
+            eval_report.md
+            eval_run.log
+          retention-days: 30
+
+      - name: Commit report to main
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && success()
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add eval_report.md
+          git diff --staged --quiet && echo "no changes" || (git commit -m "ci: update eval report [skip ci]" && git push)

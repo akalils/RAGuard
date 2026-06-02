@@ -51,3 +51,6 @@ reports/
 # 其他
 *.bak
 *.tmp
+
+# DeepEval cache
+.deepeval/

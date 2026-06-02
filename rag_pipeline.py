@@ -229,8 +229,8 @@ def split_documents(documents: list[Document]) -> list[Document]:
     - 保持法律条文的完整性
     """
     text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=800,
-        chunk_overlap=100,
+        chunk_size=400,
+        chunk_overlap=200,
         separators=[
             "\n\n\n",      # 大段落分隔
             "第[一二三四五六七八九十百千零]+[章节]",  # 章节标题
@@ -279,7 +279,7 @@ def load_vector_store(persist_dir: str = CHROMA_DB_PATH) -> Chroma:
 # 5. RAG 问答链
 # ============================================================
 
-def create_qa_chain(vectorstore: Chroma, k: int = 3):
+def create_qa_chain(vectorstore: Chroma, k: int = 5):
     """
     创建检索+生成问答链
     """
