@@ -9,8 +9,8 @@ load_dotenv()
 
 # DeepSeek / DashScope 配置
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
-OPENAI_MODEL = os.getenv("OPENAI_MODEL", "MiniMax-M2.1")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "")
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "")
 
 # Embedding 配置（用 DashScope，免费的）
 DASHSCOPE_API_KEY = os.getenv("DASHSCOPE_API_KEY", "")

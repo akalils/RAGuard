@@ -1,0 +1,38 @@
+# RAGuard — Python 依赖
+# 装全部：pip install -r requirements.txt
+
+# --- LLM / Embedding / Vector ---
+langchain>=0.3,<0.4
+langchain-core>=0.3,<0.4
+langchain-community>=0.3,<0.4
+langchain-openai>=0.2,<0.3
+langchain-huggingface>=0.1,<0.2
+langchain-chroma>=0.1,<0.2
+langchain-text-splitters>=0.3,<0.4
+chromadb>=0.5,<0.6
+sentence-transformers>=3.0,<4.0
+
+# --- 评测框架 ---
+# DeepEval：3 指标（Answer Relevancy / Faithfulness / Contextual Precision）
+deepeval>=1.0,<3.0
+# RAGAS：4 指标（Faithfulness / Contextual Precision / Context Recall / Answer Relevancy）
+ragas>=0.2,<0.4
+
+# --- 文档处理 ---
+pypdf>=4.0,<6.0
+unstructured[docx]>=0.16,<0.20
+python-docx>=1.1,<2.0
+pandas>=2.0,<3.0
+
+# --- 服务 ---
+fastapi>=0.110,<0.120
+uvicorn[standard]>=0.27,<0.35
+pydantic>=2.0,<3.0
+
+# --- 基础设施 ---
+python-dotenv>=1.0,<2.0
+pyyaml>=6.0,<7.0
+
+# --- 测试 ---
+pytest>=8.0,<9.0
+pytest-asyncio>=0.23,<0.25

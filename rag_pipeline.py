@@ -6,7 +6,6 @@
 4. 评估回答质量（RAGAS 指标）
 """
 import os
-os.environ["HF_ENDPOINT"] = "https://hf-mirror.com"
 import re
 import pandas as pd
 from pathlib import Path
