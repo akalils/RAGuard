@@ -54,3 +54,4 @@ reports/
 
 # DeepEval cache
 .deepeval/
+eval_history.db

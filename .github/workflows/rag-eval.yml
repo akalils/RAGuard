@@ -59,6 +59,8 @@ jobs:
           OPENAI_BASE_URL:   ${{ secrets.OPENAI_BASE_URL }}
           OPENAI_MODEL:      ${{ secrets.OPENAI_MODEL }}
           DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+          HF_HUB_OFFLINE:    "1"
+          TRANSFORMERS_OFFLINE: "1"
         run: |
           echo "OPENAI_MODEL=$OPENAI_MODEL"
           echo "OPENAI_BASE_URL=$OPENAI_BASE_URL"

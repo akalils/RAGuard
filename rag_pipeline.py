@@ -6,6 +6,8 @@
 4. 评估回答质量（RAGAS 指标）
 """
 import os
+os.environ.setdefault("HF_HUB_OFFLINE", "1")
+os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 import re
 import pandas as pd
 from pathlib import Path
@@ -351,6 +353,8 @@ def ask(question: str, vectorstore: Optional[Chroma] = None, verbose: bool = Tru
 
     # 检索阶段
     retrieved_docs = retriever.invoke(question)
+    if not retrieved_docs:
+        print(f"⚠️ 检索为空！question={question[:30]}, vectorstore count={vectorstore._collection.count()}")
     context_text = "\n\n".join([doc.page_content for doc in retrieved_docs])
 
     if verbose:
