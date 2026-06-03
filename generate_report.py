@@ -20,7 +20,7 @@ from deepeval import evaluate
 from deepeval.test_case import LLMTestCase
 from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric, ContextualPrecisionMetric
 from deepeval.models import GPTModel
-
+from deepeval.models import LiteLLMModel
 from rag_pipeline import ask, load_vector_store
 
 
@@ -59,6 +59,14 @@ def run_full_evaluation():
     # DeepEval 1.x 不读 OPENAI_BASE_URL/OPENAI_MODEL_NAME，必须显式传 model
     eval_model = GPTModel(
         model=OPENAI_MODEL,
+        api_key=OPENAI_API_KEY,
+        base_url=OPENAI_BASE_URL,
+    )
+    # 用 LiteLLMModel 绕过 DeepEval 的 model name 白名单
+    # "openai/gpt-5.4-nano" 前缀告诉 LiteLLM 走 OpenAI 协议（不是 Azure 协议）
+    # base_url 指向你 Azure OpenAI 的 OpenAI 兼容模式 endpoint（/openai/v1）
+    eval_model = LiteLLMModel(
+        model=f"openai/{OPENAI_MODEL}",   # → "openai/gpt-5.4-nano"
         api_key=OPENAI_API_KEY,
         base_url=OPENAI_BASE_URL,
     )
