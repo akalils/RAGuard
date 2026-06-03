@@ -53,6 +53,33 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Build vector store (if empty)
+        env:
+          HF_HUB_OFFLINE:    "1"
+          TRANSFORMERS_OFFLINE: "1"
+          OPENAI_API_KEY:    ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_BASE_URL:   ${{ secrets.OPENAI_BASE_URL }}
+          OPENAI_MODEL:      ${{ secrets.OPENAI_MODEL }}
+          DASHSCOPE_API_KEY: ${{ secrets.DASHSCOPE_API_KEY }}
+        run: |
+          python -c "
+          import os
+          from pathlib import Path
+          os.environ.setdefault('HF_HUB_OFFLINE', '1')
+          os.environ.setdefault('TRANSFORMERS_OFFLINE', '1')
+          db_path = Path('chroma_db')
+          if not db_path.exists() or not any(db_path.iterdir()):
+              print('chroma_db is empty or missing, building...')
+              from rag_pipeline import load_documents, split_documents, build_vector_store
+              from config import DOCS_DIR
+              docs = load_documents(DOCS_DIR)
+              chunks = split_documents(docs)
+              build_vector_store(chunks)
+              print('Build complete.')
+          else:
+              print(f'chroma_db exists with {len(list(db_path.iterdir()))} files, skipping build.')
+          "
+
       - name: Run evaluation
         env:
           OPENAI_API_KEY:    ${{ secrets.OPENAI_API_KEY }}
