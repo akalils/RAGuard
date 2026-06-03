@@ -19,6 +19,7 @@ from datetime import datetime
 from deepeval import evaluate
 from deepeval.test_case import LLMTestCase
 from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric, ContextualPrecisionMetric
+from deepeval.models import GPTModel
 
 from rag_pipeline import ask, load_vector_store
 
@@ -56,7 +57,7 @@ def run_full_evaluation():
         })
 
     # DeepEval 1.x 不读 OPENAI_BASE_URL/OPENAI_MODEL_NAME，必须显式传 model
-    eval_model = OpenAIModel(
+    eval_model = GPTModel(
         model=OPENAI_MODEL,
         api_key=OPENAI_API_KEY,
         base_url=OPENAI_BASE_URL,
