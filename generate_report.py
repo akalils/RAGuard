@@ -55,10 +55,16 @@ def run_full_evaluation():
             "question": item["question"],
         })
 
+    # DeepEval 1.x 不读 OPENAI_BASE_URL/OPENAI_MODEL_NAME，必须显式传 model
+    eval_model = OpenAIModel(
+        model=OPENAI_MODEL,
+        api_key=OPENAI_API_KEY,
+        base_url=OPENAI_BASE_URL,
+    )
     metrics = [
-        AnswerRelevancyMetric(threshold=0.7),
-        FaithfulnessMetric(threshold=0.7),
-        ContextualPrecisionMetric(threshold=0.7),
+        AnswerRelevancyMetric(model=eval_model, threshold=0.7),
+        FaithfulnessMetric(model=eval_model, threshold=0.7),
+        ContextualPrecisionMetric(model=eval_model, threshold=0.7),
     ]
 
     results = evaluate(test_cases=test_cases, metrics=metrics)
