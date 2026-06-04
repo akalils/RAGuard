@@ -68,16 +68,30 @@ jobs:
           os.environ.setdefault('HF_HUB_OFFLINE', '1')
           os.environ.setdefault('TRANSFORMERS_OFFLINE', '1')
           db_path = Path('chroma_db')
-          if not db_path.exists() or not any(db_path.iterdir()):
-              print('chroma_db is empty or missing, building...')
+          # 先验证是否真的可用
+          needs_build = True
+          if db_path.exists() and any(db_path.iterdir()):
+              from rag_pipeline import load_vector_store
+              try:
+                  vs = load_vector_store()
+                  if vs._collection.count() > 0:
+                      needs_build = False
+                      print(f'chroma_db OK with {vs._collection.count()} chunks, skipping build.')
+              except Exception as e:
+                  print(f'chroma_db broken: {e}, rebuilding...')
+          if needs_build:
+              print('Building vector store...')
               from rag_pipeline import load_documents, split_documents, build_vector_store
               from config import DOCS_DIR
               docs = load_documents(DOCS_DIR)
               chunks = split_documents(docs)
               build_vector_store(chunks)
-              print('Build complete.')
-          else:
-              print(f'chroma_db exists with {len(list(db_path.iterdir()))} files, skipping build.')
+              # 验证
+              from rag_pipeline import load_vector_store
+              vs = load_vector_store()
+              count = vs._collection.count()
+              print(f'Build complete. chunks={count}')
+              assert count > 0, 'Build produced empty vector store!'
           "
 
       - name: Run evaluation
