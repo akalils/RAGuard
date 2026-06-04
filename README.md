@@ -176,3 +176,37 @@ class AzureJudgeLLM(DeepEvalBaseLLM):
 | CI/CD 工具链实践 | GitHub Actions：push/PR 触发，缓存模型，自动提交报告 |
 | LLM 模型评测 | Azure OpenAI Judge + HF Embedding 本地评测 |
 | 编写技术文档 | 本 README + 踩坑记录 + 面试话术 |
+| **大模型能力测评** | **`model_eval/`：C-Eval 6 学科 + MT-Bench 8 类别多轮对话评测 + LLM-as-Judge** |
+
+---
+
+## 大模型基座评测
+
+RAGuard 不只评测 RAG 应用，还提供大模型基座能力评测，覆盖**知识广度**和**多轮对话质量**两个核心维度。
+
+### C-Eval · 中文基座评测
+
+| 学科 | 类别 | 题目数 |
+|------|------|--------|
+| 计算机网络 / 计算机组成 / 操作系统 | STEM | 5 × 3 |
+| 马克思主义基本原理 | Social Science | 5 |
+| 中国近现代史 | Humanities | 5 |
+| 高等数学 | STEM | 5 |
+
+```bash
+python model_eval/run_ceval.py --model gpt-5.4-nano --n_shot 5
+```
+
+### MT-Bench · 多轮对话评测（LLM-as-Judge）
+
+8 个类别（写作/角色扮演/推理/数学/编程/信息抽取/科学/人文），每类 2 轮对话，用强模型（GPT-4o）当 Judge 打 1-10 分。
+
+```bash
+python model_eval/run_mtbench.py --target gpt-5.4-nano --judge gpt-4o
+```
+
+**核心能力**：
+- LLM-as-Judge 评分 Prompt 设计（4 维度：准确性/完整性/连贯性/表达）
+- 理解 Judge 模型的 3 个偏差（位置/长度/自我偏好）
+
+详见 [`model_eval/README.md`](model_eval/README.md)。
