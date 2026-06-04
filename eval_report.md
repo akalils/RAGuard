@@ -1,6 +1,6 @@
 # RAGuard 评测报告
 
-生成时间：2026-06-03 10:34:12
+生成时间：2026-06-04 03:54:24
 评测数据集：10 条法律咨询问答
 评测框架：DeepEval (3) + RAGAS (4) + 检索 (MRR/NDCG)
 通过阈值：0.7
@@ -11,7 +11,7 @@
 
 ### DeepEval
 
-- **Answer Relevancy 均分**: 0.435
+- **Answer Relevancy 均分**: 0.342
 - **Faithfulness 均分**: 1.000
 - **Contextual Precision 均分**: 0.000
 
@@ -19,8 +19,8 @@
 
 - **Faithfulness（忠实度）**: nan
 - **Context Precision（检索精度）**: 0.000
-- **Context Recall（检索召回）**: 0.222
-- **Answer Relevancy（回答相关性）**: 0.075
+- **Context Recall（检索召回）**: 0.528
+- **Answer Relevancy（回答相关性）**: 0.074
 
 ### 检索质量
 
@@ -32,7 +32,7 @@
 ### 劳动法
 
 **DeepEval:**
-- Answer Relevancy: 0.435
+- Answer Relevancy: 0.342
 - Faithfulness: 1.000
 - Contextual Precision: 0.000
 
@@ -40,7 +40,7 @@
 - Faithfulness（忠实度）: nan
 - Context Precision（检索精度）: 0.000
 - Context Recall（检索召回）: nan
-- Answer Relevancy（回答相关性）: nan
+- Answer Relevancy（回答相关性）: 0.074
 
 **检索:**
 - MRR: 0.000
@@ -57,11 +57,11 @@
 - **平时加班工资怎么算？周末加班呢？法定节假日呢？...** [劳动法/easy]
   未通过: Answer Relevancy, Contextual Precision
 - **什么情况下劳动者可以要求签订无固定期限劳动合同？...** [劳动法/medium]
-  未通过: Contextual Precision
+  未通过: Answer Relevancy, Contextual Precision
 - **用人单位可以单方面解除劳动合同的情形有哪些？...** [劳动法/medium]
   未通过: Answer Relevancy, Contextual Precision
 - **劳动者想辞职，需要提前多久通知用人单位？...** [劳动法/easy]
-  未通过: Answer Relevancy, Contextual Precision
+  未通过: Contextual Precision
 - **竞业限制的期限最长是多久？竞业限制期间用人单位需要支付补偿吗？...** [劳动法/medium]
   未通过: Answer Relevancy, Contextual Precision
 - **用人单位拖欠工资，劳动者可以怎么办？...** [劳动法/easy]
@@ -79,21 +79,19 @@
   - Answer Relevancy（回答相关性）: 0.000
 - **试用期的最长时间是多久？...** [劳动法/easy]
   - Context Precision（检索精度）: 0.000
-  - Context Recall（检索召回）: 0.000
   - Answer Relevancy（回答相关性）: 0.000
 - **平时加班工资怎么算？周末加班呢？法定节假日呢？...** [劳动法/easy]
   - Context Precision（检索精度）: 0.000
-  - Context Recall（检索召回）: 0.000
-  - Answer Relevancy（回答相关性）: 0.000
 - **什么情况下劳动者可以要求签订无固定期限劳动合同？...** [劳动法/medium]
   - Context Precision（检索精度）: 0.000
   - Answer Relevancy（回答相关性）: 0.000
 - **用人单位可以单方面解除劳动合同的情形有哪些？...** [劳动法/medium]
   - Context Precision（检索精度）: 0.000
   - Context Recall（检索召回）: 0.000
-  - Answer Relevancy（回答相关性）: 0.672
+  - Answer Relevancy（回答相关性）: 0.000
 - **劳动者想辞职，需要提前多久通知用人单位？...** [劳动法/easy]
   - Context Precision（检索精度）: 0.000
+  - Answer Relevancy（回答相关性）: 0.000
 - **竞业限制的期限最长是多久？竞业限制期间用人单位需要支付补偿吗？...** [劳动法/medium]
   - Context Precision（检索精度）: 0.000
   - Answer Relevancy（回答相关性）: 0.000
@@ -103,7 +101,6 @@
   - Answer Relevancy（回答相关性）: 0.000
 - **经济补偿金的计算标准是什么？...** [劳动法/medium]
   - Context Precision（检索精度）: 0.000
-  - Context Recall（检索召回）: 0.000
   - Answer Relevancy（回答相关性）: 0.000
 - **女职工在孕期、产期、哺乳期内，用人单位可以解除劳动合同吗？...** [劳动法/medium]
   - Context Precision（检索精度）: 0.000
