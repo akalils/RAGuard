@@ -1,0 +1,62 @@
+{
+  "run_time": "2026-06-04 15:30:07",
+  "model": "gpt-5.4-nano",
+  "n_shot": 0,
+  "subjects": [
+    "computer_network"
+  ],
+  "total_questions": 5,
+  "total_correct": 5,
+  "avg_accuracy": 1.0,
+  "per_subject": [
+    {
+      "subject": "computer_network",
+      "subject_zh": "计算机网络",
+      "total": 5,
+      "correct": 5,
+      "accuracy": 1.0,
+      "details": [
+        {
+          "id": 1,
+          "question": "OSI 参考模型的第 3 层是（ ）。",
+          "correct_answer": "C",
+          "predicted": "C",
+          "raw_output": "C",
+          "is_correct": true
+        },
+        {
+          "id": 2,
+          "question": "TCP 协议是一种（ ）协议。",
+          "correct_answer": "D",
+          "predicted": "D",
+          "raw_output": "D",
+          "is_correct": true
+        },
+        {
+          "id": 3,
+          "question": "HTTP 协议默认使用的端口号是（ ）。",
+          "correct_answer": "C",
+          "predicted": "C",
+          "raw_output": "C",
+          "is_correct": true
+        },
+        {
+          "id": 4,
+          "question": "下列哪一项不属于网络拓扑结构？（ ）",
+          "correct_answer": "D",
+          "predicted": "D",
+          "raw_output": "D",
+          "is_correct": true
+        },
+        {
+          "id": 5,
+          "question": "IP 地址 192.168.1.1 属于哪类地址？（ ）",
+          "correct_answer": "C",
+          "predicted": "C",
+          "raw_output": "C",
+          "is_correct": true
+        }
+      ]
+    }
+  ]
+}
