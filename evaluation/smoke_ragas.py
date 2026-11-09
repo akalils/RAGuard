@@ -1,12 +1,19 @@
 """
 RAGAS 0.4.3 升级后的冒烟测试 —— 你自己跑
-用法：/opt/miniconda3/envs/pytorch/bin/python3 smoke_ragas.py
+用法：python -m evaluation.smoke_ragas
 
 ⚠️ RAGAS 0.4.3 的坑：collections.* 的类不继承 Metric，evaluate() 校验失败。
    必须用旧路径（from ragas.metrics import ...）
 """
+
+# Support both python -m and an absolute script path from MCP clients.
+import sys
+from pathlib import Path
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import sys, time, warnings
-sys.path.insert(0, "/Users/mac/Project/RAGuard")
+# Project imports are resolved from this file, not a user-specific path.
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore", DeprecationWarning)
@@ -22,7 +29,7 @@ from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
 from langchain_openai import ChatOpenAI
 from langchain_huggingface import HuggingFaceEmbeddings
-from config import OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL
+from raguard.config import OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL
 
 print("== 1. 构造 LLM judge ==")
 t0 = time.time()

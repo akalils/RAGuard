@@ -6,7 +6,7 @@
 import os
 
 # 从 config.py 读取配置，避免硬编码
-from config import OPENAI_API_KEY, OPENAI_MODEL, OPENAI_BASE_URL
+from raguard.config import OPENAI_API_KEY, OPENAI_MODEL, OPENAI_BASE_URL, EVAL_DATASET_PATH
 
 # 设置 DeepEval 需要的环境变量
 os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
@@ -19,11 +19,11 @@ from deepeval import assert_test
 from deepeval.test_case import LLMTestCase
 from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric, ContextualPrecisionMetric
 
-from rag_pipeline import ask, load_vector_store
+from raguard.rag_pipeline import ask, load_vector_store
 
 
 # ============ 加载数据集 ============
-def load_eval_dataset(path="eval_dataset.yaml"):
+def load_eval_dataset(path=EVAL_DATASET_PATH):
     with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 

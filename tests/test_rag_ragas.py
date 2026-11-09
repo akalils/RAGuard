@@ -6,9 +6,9 @@ import os
 import yaml
 import pytest
 
-from config import OPENAI_API_KEY, OPENAI_MODEL, OPENAI_BASE_URL
-from rag_pipeline import ask, load_vector_store
-from ragas_eval import run_ragas_evaluation
+from raguard.config import OPENAI_API_KEY, OPENAI_MODEL, OPENAI_BASE_URL, EVAL_DATASET_PATH
+from raguard.rag_pipeline import ask, load_vector_store
+from evaluation.ragas_eval import run_ragas_evaluation
 
 
 # DeepEval 也是靠这套 env var，跟 RAGAS 共享一份
@@ -17,7 +17,7 @@ os.environ["OPENAI_MODEL_NAME"] = OPENAI_MODEL
 os.environ["OPENAI_BASE_URL"] = OPENAI_BASE_URL
 
 
-def _load_dataset(path="eval_dataset.yaml"):
+def _load_dataset(path=EVAL_DATASET_PATH):
     with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 

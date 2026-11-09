@@ -3,24 +3,29 @@ C-Eval 中文基座模型评测
 覆盖 6 个代表性学科：计算机网络、计算机组成、操作系统、马克思主义、中国历史、高等数学
 
 使用方法：
-    python model_eval/run_ceval.py --model deepseek-chat --n_shot 5
-    python model_eval/run_ceval.py --model gpt-5.4-nano --n_shot 0
+    python evaluation/model_eval/run_ceval.py --model deepseek-chat --n_shot 5
+    python evaluation/model_eval/run_ceval.py --model gpt-5.4-nano --n_shot 0
 """
+
+# Support both python -m and an absolute script path from MCP clients.
+import sys
+from pathlib import Path
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 import os
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 
-import sys
 import json
 import time
 import argparse
 import requests
 import re
 from datetime import datetime
-from pathlib import Path
 from typing import List, Dict
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from config import OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL
+# See the script bootstrap for project-root resolution.
+from raguard.config import OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL, REPORTS_DIR
 
 
 # 6 个代表性学科
@@ -283,9 +288,9 @@ def main():
         out_path = args.output
     else:
         n_shot_tag = f"{args.n_shot}shot"
-        out_path = (f"model_eval/ceval_results/"
+        out_path = (REPORTS_DIR / "model_eval" / "ceval_results" / (
                     f"{args.model.replace('/', '_')}_{n_shot_tag}_"
-                    f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.json")
+                    f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"))
 
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:

@@ -3,24 +3,29 @@ MT-Bench 多轮对话评测 + LLM-as-Judge
 简化版：8 类别，2 轮对话，强模型（judge）给 1-10 分
 
 使用方法：
-    python model_eval/run_mtbench.py --target gpt-5.4-nano --judge gpt-4o
-    python model_eval/run_mtbench.py --target deepseek-chat --judge gpt-4o --limit 3
+    python evaluation/model_eval/run_mtbench.py --target gpt-5.4-nano --judge gpt-4o
+    python evaluation/model_eval/run_mtbench.py --target deepseek-chat --judge gpt-4o --limit 3
 """
+
+# Support both python -m and an absolute script path from MCP clients.
+import sys
+from pathlib import Path
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
 import os
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 
-import sys
 import json
 import re
 import time
 import argparse
 import requests
 from datetime import datetime
-from pathlib import Path
 from typing import List, Dict, Tuple
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from config import OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL
+# See the script bootstrap for project-root resolution.
+from raguard.config import OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL, REPORTS_DIR
 
 
 # 8 个 MT-Bench 类别（简化版，每类 1 个示例 2 轮对话）
@@ -257,8 +262,8 @@ def main():
         out_path = args.output
     else:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        out_path = (f"model_eval/mtbench_results/"
-                    f"{args.target.replace('/', '_')}_{timestamp}.json")
+        out_path = (REPORTS_DIR / "model_eval" / "mtbench_results" / (
+                    f"{args.target.replace('/', '_')}_{timestamp}.json"))
 
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:

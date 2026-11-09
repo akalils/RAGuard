@@ -5,12 +5,18 @@
 3. 检索 + 生成回答
 4. 评估回答质量（RAGAS 指标）
 """
+
+# Support both python -m and an absolute script path from MCP clients.
+import sys
+from pathlib import Path
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import os
-os.environ.setdefault("HF_HUB_OFFLINE", "1")
-os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
+# os.environ.setdefault("HF_HUB_OFFLINE", "1")
+# os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 import re
 import pandas as pd
-from pathlib import Path
 from typing import Optional
 from urllib.parse import urlparse
 
@@ -22,7 +28,7 @@ from langchain_chroma import Chroma
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
-from config import (
+from raguard.config import (
     OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL,
     DASHSCOPE_API_KEY, EMBEDDING_MODEL,
     CHROMA_DB_PATH, DOCS_DIR,
@@ -396,8 +402,8 @@ def main():
         if not raw_docs:
             print("⚠️ 目录下没有文档，请先放入法律文档")
             print("\n提示：")
-            print("  1. 将 PDF/Word 法律文件放入 ./document/ 目录")
-            print("  2. 或将网页 URL 写入 ./document/urls.txt（每行一个）")
+            print("  1. 将 PDF/Word 法律文件放入 ./data/documents/ 目录")
+            print("  2. 或将网页 URL 写入 ./data/documents/urls.txt（每行一个）")
             return
         chunks = split_documents(raw_docs)
         vectorstore = build_vector_store(chunks)

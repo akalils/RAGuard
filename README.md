@@ -44,32 +44,36 @@ cp .env.example .env
 # 编辑 .env 填入 API Key
 
 # 4. 构建向量库（首次运行）
-python rag_pipeline.py --build
+python -c "from raguard.rag_pipeline import load_documents, split_documents, build_vector_store; build_vector_store(split_documents(load_documents()))"
 
 # 5. 交互式问答
-python rag_pipeline.py
+python -m raguard.rag_pipeline
 
 # 6. 运行评测
-python generate_report.py
+python -m evaluation.generate_report
 ```
 
 ## 项目结构
 
-```
+```text
 RAGuard/
-├── rag_pipeline.py          # RAG 核心流程（文档加载/分块/检索/生成）
-├── config.py                # 环境变量配置
-├── api.py                   # FastAPI 接口
-├── eval_dataset.yaml        # 评测数据集（39 条法律问答，支持 3 类别 3 难度）
-├── generate_report.py       # DeepEval + RAGAS 合并评测 + 报告生成
-├── ragas_eval.py            # RAGAS 评测封装
-├── test_rag_ragas.py        # RAGAS pytest 入口
-├── eval_report.md           # 自动生成的评测报告
-├── document/                # 法律文档（劳动法 .docx, 刑法 .docx）
-├── chroma_db/               # ChromaDB 向量存储（347 chunks）
-└── .github/workflows/
-    └── rag-eval.yml         # CI 工作流
+├── raguard/                  # RAG 核心、配置、知识检索封装、FastAPI
+├── evaluation/               # RAG 评测、报告生成、模型基座评测
+├── tests/                    # DeepEval / RAGAS 评测测试入口
+├── data/
+│   ├── documents/            # 法律原文与 urls.txt
+│   ├── datasets/             # eval_dataset.yaml
+│   └── chroma_db/            # 已有向量库（本地，不提交）
+├── reports/                  # 评测报告、历史数据库、模型评测结果
+├── notebooks/                # Jupyter 学习笔记
+├── docs/                     # 面试笔记与目录说明
+├── .codex/                   # 指向旁边 mcp-lab 的 Codex 客户端配置
+├── .cursor/                  # 指向旁边 mcp-lab 的 Cursor 客户端配置
+├── .env                      # 本地凭据，保留在根目录，不提交
+└── .github/workflows/        # CI 工作流
 ```
+
+路径与命令详见[目录和运行说明](docs/PROJECT_STRUCTURE.md)。MCP 练习已拆到旁边的 `mcp-lab` 项目。默认数据与报告路径由 `raguard/config.py` 根据项目位置解析，不再取决于终端当前目录。
 
 ## CI/CD
 
@@ -78,7 +82,7 @@ GitHub Actions 工作流（`.github/workflows/rag-eval.yml`）：
 - **触发**: push / PR / 手动 / 每周一 2:00 定时
 - **流程**: 安装依赖 → 加载缓存模型 → 运行评测 → 上传 artifact → 自动提交报告
 - **缓存**: HuggingFace 模型 + ChromaDB 向量库
-- **产物**: `eval_report.md` + `eval_run.log`（30 天保留）
+- **产物**: `reports/eval_report.md` + `reports/eval_run.log`（30 天保留）
 
 ### 环境变量（GitHub Secrets）
 
@@ -146,7 +150,7 @@ class AzureJudgeLLM(DeepEvalBaseLLM):
 
 ### `__pycache__` 缓存问题
 
-**问题**: `generate_report.py` 调用 `ask()` 时返回空检索结果，但直接调用 `ask()` 正常。
+**问题**: `evaluation/generate_report.py` 调用 `ask()` 时返回空检索结果，但直接调用 `ask()` 正常。
 
 **解决**: 删除 `__pycache__/` 目录 + 重建 `chroma_db`。根因是旧版 `rag_pipeline.py` 的 `ask()` 函数被缓存，新版修改未生效。
 
@@ -154,7 +158,7 @@ class AzureJudgeLLM(DeepEvalBaseLLM):
 
 | 问题 | 影响 | 临时方案 |
 |------|------|---------|
-| `retrieval_context` 在评测中为空 | Context Precision 和 Recall 偏低 | 需排查 `generate_report.py` 中 `ask()` 调用链 |
+| `retrieval_context` 在评测中为空 | Context Precision 和 Recall 偏低 | 需排查 `evaluation/generate_report.py` 中 `ask()` 调用链 |
 | RAGAS 部分题超时 | 个别题无 RAGAS 分数 | 增加超时时间或减少并发 |
 | 刑法类别题目尚未补充 | 只有劳动法类别有评测数据 | 后续扩展 eval_dataset.yaml |
 
@@ -171,12 +175,12 @@ class AzureJudgeLLM(DeepEvalBaseLLM):
 
 | JD 要求 | 本项目实现 |
 |---------|-----------|
-| 编写评测数据集 / 标注 | `eval_dataset.yaml`：39 条法律问答，3 类别 3 难度 |
-| 自动化测试框架搭建 | `generate_report.py`：DeepEval + RAGAS 7 指标自动评测 |
+| 编写评测数据集 / 标注 | `data/datasets/eval_dataset.yaml`：39 条法律问答，3 类别 3 难度 |
+| 自动化测试框架搭建 | `evaluation/generate_report.py`：DeepEval + RAGAS 7 指标自动评测 |
 | CI/CD 工具链实践 | GitHub Actions：push/PR 触发，缓存模型，自动提交报告 |
 | LLM 模型评测 | Azure OpenAI Judge + HF Embedding 本地评测 |
 | 编写技术文档 | 本 README + 踩坑记录 + 面试话术 |
-| **大模型能力测评** | **`model_eval/`：C-Eval 6 学科 + MT-Bench 8 类别多轮对话评测 + LLM-as-Judge** |
+| **大模型能力测评** | **`evaluation/model_eval/`：C-Eval 6 学科 + MT-Bench 8 类别多轮对话评测 + LLM-as-Judge** |
 
 ---
 
@@ -194,7 +198,7 @@ RAGuard 不只评测 RAG 应用，还提供大模型基座能力评测，覆盖*
 | 高等数学 | STEM | 5 |
 
 ```bash
-python model_eval/run_ceval.py --model gpt-5.4-nano --n_shot 5
+python evaluation/model_eval/run_ceval.py --model gpt-5.4-nano --n_shot 5
 ```
 
 ### MT-Bench · 多轮对话评测（LLM-as-Judge）
@@ -202,11 +206,11 @@ python model_eval/run_ceval.py --model gpt-5.4-nano --n_shot 5
 8 个类别（写作/角色扮演/推理/数学/编程/信息抽取/科学/人文），每类 2 轮对话，用强模型（GPT-4o）当 Judge 打 1-10 分。
 
 ```bash
-python model_eval/run_mtbench.py --target gpt-5.4-nano --judge gpt-4o
+python evaluation/model_eval/run_mtbench.py --target gpt-5.4-nano --judge gpt-4o
 ```
 
 **核心能力**：
 - LLM-as-Judge 评分 Prompt 设计（4 维度：准确性/完整性/连贯性/表达）
 - 理解 Judge 模型的 3 个偏差（位置/长度/自我偏好）
 
-详见 [`model_eval/README.md`](model_eval/README.md)。
+详见 [模型评测说明](evaluation/model_eval/README.md)。

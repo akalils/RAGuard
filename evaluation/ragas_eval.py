@@ -24,10 +24,11 @@ with warnings.catch_warnings():
 
 from ragas.llms import LangchainLLMWrapper
 from ragas.embeddings import LangchainEmbeddingsWrapper
+from ragas.run_config import RunConfig
 from langchain_openai import ChatOpenAI
 from langchain_huggingface import HuggingFaceEmbeddings
 
-from config import OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL
+from raguard.config import OPENAI_API_KEY, OPENAI_BASE_URL, OPENAI_MODEL
 
 
 def get_ragas_llm():
@@ -38,6 +39,7 @@ def get_ragas_llm():
             api_key=OPENAI_API_KEY,
             base_url=OPENAI_BASE_URL,
             temperature=0,
+            max_retries=8,
         )
     )
 
@@ -87,6 +89,8 @@ def run_ragas_evaluation(test_cases: list[dict]) -> dict:
         dataset=dataset,
         metrics=metrics,
         raise_exceptions=False,
+        batch_size=1,
+        run_config=RunConfig(max_workers=1, max_retries=10),
     )
 
     # ---- 5. 拆出 per-question + overall ----

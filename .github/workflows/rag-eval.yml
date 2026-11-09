@@ -4,12 +4,11 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'rag_pipeline.py'
-      - 'ragas_eval.py'
-      - 'test_rag_ragas.py'
-      - 'generate_report.py'
-      - 'eval_dataset.yaml'
-      - 'document/**'
+      - 'raguard/**'
+      - 'evaluation/**'
+      - 'tests/**'
+      - 'data/datasets/eval_dataset.yaml'
+      - 'data/documents/**'
       - 'requirements.txt'
       - '.github/workflows/rag-eval.yml'
   push:
@@ -44,8 +43,8 @@ jobs:
       - name: Cache vector store
         uses: actions/cache@v4
         with:
-          path: chroma_db
-          key: vs-${{ runner.os }}-${{ hashFiles('document/**/*.docx', 'rag_pipeline.py', 'requirements.txt') }}
+          path: data/chroma_db
+          key: vs-${{ runner.os }}-${{ hashFiles('data/documents/**/*.docx', 'raguard/rag_pipeline.py', 'requirements.txt') }}
           restore-keys: vs-${{ runner.os }}-
 
       - name: Install dependencies
@@ -67,11 +66,11 @@ jobs:
           from pathlib import Path
           os.environ.setdefault('HF_HUB_OFFLINE', '1')
           os.environ.setdefault('TRANSFORMERS_OFFLINE', '1')
-          db_path = Path('chroma_db')
+          db_path = Path('data/chroma_db')
           # 先验证是否真的可用
           needs_build = True
           if db_path.exists() and any(db_path.iterdir()):
-              from rag_pipeline import load_vector_store
+              from raguard.rag_pipeline import load_vector_store
               try:
                   vs = load_vector_store()
                   if vs._collection.count() > 0:
@@ -81,13 +80,13 @@ jobs:
                   print(f'chroma_db broken: {e}, rebuilding...')
           if needs_build:
               print('Building vector store...')
-              from rag_pipeline import load_documents, split_documents, build_vector_store
-              from config import DOCS_DIR
+              from raguard.rag_pipeline import load_documents, split_documents, build_vector_store
+              from raguard.config import DOCS_DIR
               docs = load_documents(DOCS_DIR)
               chunks = split_documents(docs)
               build_vector_store(chunks)
               # 验证
-              from rag_pipeline import load_vector_store
+              from raguard.rag_pipeline import load_vector_store
               vs = load_vector_store()
               count = vs._collection.count()
               print(f'Build complete. chunks={count}')
@@ -106,7 +105,8 @@ jobs:
           echo "OPENAI_MODEL=$OPENAI_MODEL"
           echo "OPENAI_BASE_URL=$OPENAI_BASE_URL"
           test -n "$OPENAI_API_KEY" || (echo "::error::OPENAI_API_KEY is empty" && exit 1)
-          python generate_report.py 2>&1 | tee eval_run.log
+          mkdir -p reports
+          python -m evaluation.generate_report 2>&1 | tee reports/eval_run.log
 
       - name: Upload artifacts
         if: always()
@@ -114,8 +114,8 @@ jobs:
         with:
           name: rag-eval-report-${{ github.run_id }}
           path: |
-            eval_report.md
-            eval_run.log
+            reports/eval_report.md
+            reports/eval_run.log
           retention-days: 30
 
       - name: Commit report to main
@@ -123,5 +123,5 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add eval_report.md
+          git add reports/eval_report.md
           git diff --staged --quiet && echo "no changes" || (git commit -m "ci: update eval report [skip ci]" && git push)

@@ -26,9 +26,11 @@ ENV/
 env/
 .venv
 
-# IDE
+# IDE 与本机客户端配置（含本机绝对路径）
 .idea/
 .vscode/
+.cursor/
+.codex/
 *.swp
 *.swo
 *~
@@ -43,7 +45,10 @@ env/
 chroma_db/
 *.log
 screenshots/
-reports/
+# Reports include versioned example outputs; only runtime logs/databases are ignored.
+reports/*.log
+reports/*.db*
+seo_eval/output/
 
 # Jupyter
 .ipynb_checkpoints/
@@ -55,3 +60,6 @@ reports/
 # DeepEval cache
 .deepeval/
 eval_history.db
+
+# Archived generated caches from directory reorganization
+/.cache/

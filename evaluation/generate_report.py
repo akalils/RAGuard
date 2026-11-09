@@ -4,29 +4,41 @@ DeepEval (3 指标) + RAGAS (4 指标) + 检索指标 (MRR/NDCG)
 SQLite 持久化 + 回归对比
 """
 
+# Support both python -m and an absolute script path from MCP clients.
+import sys
+from pathlib import Path
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+
 import os
 os.environ.setdefault("HF_HUB_OFFLINE", "1")
 os.environ.setdefault("TRANSFORMERS_OFFLINE", "1")
 
-from config import OPENAI_API_KEY, OPENAI_MODEL, OPENAI_BASE_URL
+from raguard.config import OPENAI_API_KEY, OPENAI_MODEL, OPENAI_BASE_URL, EVAL_DATASET_PATH
 os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 os.environ["OPENAI_MODEL_NAME"] = OPENAI_MODEL
 os.environ["OPENAI_BASE_URL"] = OPENAI_BASE_URL
 
+import asyncio
 import math
 import re
 import sqlite3
+import time
 import yaml
 from datetime import datetime
 from deepeval import evaluate
+from deepeval.evaluate.configs import AsyncConfig
 from deepeval.test_case import LLMTestCase
 from deepeval.metrics import AnswerRelevancyMetric, FaithfulnessMetric, ContextualPrecisionMetric
 from deepeval.models import DeepEvalBaseLLM
-from openai import AsyncOpenAI
-from ragas_eval import run_ragas_evaluation
-from rag_pipeline import ask, load_vector_store
+from openai import OpenAI, AsyncOpenAI, APIStatusError, RateLimitError
+from evaluation.ragas_eval import run_ragas_evaluation
+from raguard.rag_pipeline import ask, load_vector_store
 
-DB_PATH = "eval_history.db"
+from raguard.config import EVAL_REPORT_PATH, EVAL_HISTORY_PATH
+
+DB_PATH = EVAL_HISTORY_PATH
 
 
 # ============================================================
@@ -92,6 +104,7 @@ def compute_retrieval_metrics(
 
 def init_db():
     """初始化 SQLite 数据库"""
+    Path(DB_PATH).parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
     conn.execute("""
         CREATE TABLE IF NOT EXISTS eval_runs (
@@ -234,54 +247,77 @@ def compare_runs(current: dict, previous: dict, threshold: float = 0.05) -> list
 # 3. 评测执行
 # ============================================================
 
-def run_full_evaluation():
-    """执行 DeepEval 评测 + 检索指标"""
+def collect_rag_outputs() -> list[dict]:
+    """每道题只 ask() 一次，结果同时给 DeepEval / RAGAS / MRR 用。"""
     vectorstore = load_vector_store()
     dataset = load_eval_dataset()
-
-    test_cases = []
-    meta_info = []
-    retrieval_results = []  # 保存检索结果用于计算 MRR/NDCG
-
+    records = []
     for item in dataset:
-        print(f"评测中: {item['question'][:30]}...")
-
+        print(f"生成中: {item['question'][:30]}...")
         result = ask(item["question"], vectorstore, verbose=False)
-        retrieval_context = [doc.page_content for doc in result["retrieved_docs"]]
-
-        test_case = LLMTestCase(
-            input=item["question"],
-            actual_output=result["answer"],
-            expected_output=item["reference_answer"],
-            retrieval_context=retrieval_context,
-        )
-        test_cases.append(test_case)
-        meta_info.append({
+        docs = result["retrieved_docs"]
+        records.append({
+            "question": item["question"],
+            "answer": result["answer"],
+            "retrieved_docs": docs,
+            "contexts": [doc.page_content for doc in docs],
+            "reference_answer": item["reference_answer"],
             "category": item["category"],
             "difficulty": item["difficulty"],
-            "question": item["question"],
-            "reference_answer": item["reference_answer"],
+        })
+    print(f"✅ 已生成 {len(records)} 条回答（每题仅 ask 一次）")
+    return records
+
+
+def run_full_evaluation(records: list[dict]):
+    """执行 DeepEval 评测 + 检索指标（复用已生成的回答）"""
+    test_cases = []
+    meta_info = []
+    retrieval_results = []
+
+    for rec in records:
+        test_cases.append(
+            LLMTestCase(
+                input=rec["question"],
+                actual_output=rec["answer"],
+                expected_output=rec["reference_answer"],
+                retrieval_context=rec["contexts"],
+            )
+        )
+        meta_info.append({
+            "category": rec["category"],
+            "difficulty": rec["difficulty"],
+            "question": rec["question"],
+            "reference_answer": rec["reference_answer"],
         })
         retrieval_results.append({
-            "docs": result["retrieved_docs"],
-            "count": len(result["retrieved_docs"]),
+            "docs": rec["retrieved_docs"],
+            "count": len(rec["retrieved_docs"]),
         })
 
-    # DeepEval 评测
+    # DeepEval 评测（串行 + 429 重试，避免免费档限流）
     eval_model = AzureJudgeLLM()
+    metric_kw = dict(model=eval_model, threshold=0.7, async_mode=False)
     metrics = [
-        AnswerRelevancyMetric(model=eval_model, threshold=0.7),
-        FaithfulnessMetric(model=eval_model, threshold=0.7),
-        ContextualPrecisionMetric(model=eval_model, threshold=0.7),
+        AnswerRelevancyMetric(**metric_kw),
+        FaithfulnessMetric(**metric_kw),
+        ContextualPrecisionMetric(**metric_kw),
     ]
-    deepeval_results = evaluate(test_cases=test_cases, metrics=metrics)
+    deepeval_results = evaluate(
+        test_cases=test_cases,
+        metrics=metrics,
+        async_config=AsyncConfig(
+            run_async=False,
+            max_concurrent=1,
+            throttle_value=2.0,
+        ),
+    )
 
-    # 计算检索指标
     retrieval_metrics = []
-    for i, item in enumerate(meta_info):
+    for i, rec in enumerate(records):
         rm = compute_retrieval_metrics(
             retrieval_results[i]["docs"],
-            item["reference_answer"],
+            rec["reference_answer"],
         )
         rm["retrieved_count"] = retrieval_results[i]["count"]
         retrieval_metrics.append(rm)
@@ -289,33 +325,30 @@ def run_full_evaluation():
     return deepeval_results, meta_info, retrieval_metrics
 
 
-def run_ragas_batch():
-    """跑 RAGAS 评测"""
-    vectorstore = load_vector_store()
-    dataset = load_eval_dataset()
-
-    cases = []
-    meta = []
-    for item in dataset:
-        print(f"[RAGAS] {item['question'][:30]}...")
-        result = ask(item["question"], vectorstore, verbose=False)
-        cases.append({
-            "question":     item["question"],
-            "answer":       result["answer"],
-            "contexts":     [doc.page_content for doc in result["retrieved_docs"]],
-            "ground_truth": item["reference_answer"],
-        })
-        meta.append({
-            "category":   item["category"],
-            "difficulty": item["difficulty"],
-            "question":   item["question"],
-        })
-
+def run_ragas_batch(records: list[dict]):
+    """跑 RAGAS 评测（复用同一批 ask() 结果）"""
+    cases = [
+        {
+            "question": rec["question"],
+            "answer": rec["answer"],
+            "contexts": rec["contexts"],
+            "ground_truth": rec["reference_answer"],
+        }
+        for rec in records
+    ]
+    meta = [
+        {
+            "category": rec["category"],
+            "difficulty": rec["difficulty"],
+            "question": rec["question"],
+        }
+        for rec in records
+    ]
     ragas_result = run_ragas_evaluation(cases)
     return ragas_result, meta
 
 
-def load_eval_dataset(path="eval_dataset.yaml"):
+def load_eval_dataset(path=EVAL_DATASET_PATH):
     with open(path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
@@ -324,29 +357,57 @@ def load_eval_dataset(path="eval_dataset.yaml"):
 # 4. 报告生成
 # ============================================================
 
+_JUDGE_MAX_RETRIES = 8
+_JUDGE_BASE_DELAY = 4.0
+
+
+def _is_rate_limit(exc: Exception) -> bool:
+    if isinstance(exc, RateLimitError):
+        return True
+    if isinstance(exc, APIStatusError) and getattr(exc, "status_code", None) == 429:
+        return True
+    return "429" in str(exc) or "rate limit" in str(exc).lower()
+
+
+def _retry_delay(exc: Exception, attempt: int) -> float:
+    delay = min(_JUDGE_BASE_DELAY * (2 ** attempt), 60.0)
+    response = getattr(exc, "response", None)
+    headers = getattr(response, "headers", None) or {}
+    retry_after = headers.get("retry-after") or headers.get("Retry-After")
+    if retry_after:
+        try:
+            delay = max(delay, float(retry_after))
+        except ValueError:
+            pass
+    return delay
+
+
 class AzureJudgeLLM(DeepEvalBaseLLM):
     def __init__(self):
-        self._client = AsyncOpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL)
+        kwargs = dict(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL)
+        self._client = AsyncOpenAI(**kwargs)
+        self._sync_client = OpenAI(**kwargs)
         self._model = OPENAI_MODEL
+        self._lock = asyncio.Lock()
 
     def load_model(self):
         return self._client
 
-    def generate(self, prompt, schema=None):
+    def _complete_sync(self, prompt, schema=None):
         if schema is None:
-            r = self._client.chat.completions.create(
+            r = self._sync_client.chat.completions.create(
                 model=self._model,
                 messages=[{"role": "user", "content": prompt}],
             )
             return r.choices[0].message.content
-        r = self._client.beta.chat.completions.parse(
+        r = self._sync_client.beta.chat.completions.parse(
             model=self._model,
             messages=[{"role": "user", "content": prompt}],
             response_format=schema,
         )
         return r.choices[0].message.parsed
 
-    async def a_generate(self, prompt, schema=None):
+    async def _complete_async(self, prompt, schema=None):
         if schema is None:
             r = await self._client.chat.completions.create(
                 model=self._model,
@@ -359,6 +420,39 @@ class AzureJudgeLLM(DeepEvalBaseLLM):
             response_format=schema,
         )
         return r.choices[0].message.parsed
+
+    def generate(self, prompt, schema=None):
+        last_exc = None
+        for attempt in range(_JUDGE_MAX_RETRIES):
+            try:
+                result = self._complete_sync(prompt, schema)
+                time.sleep(0.5)
+                return result
+            except Exception as e:
+                last_exc = e
+                if not _is_rate_limit(e) or attempt == _JUDGE_MAX_RETRIES - 1:
+                    raise
+                delay = _retry_delay(e, attempt)
+                print(f"⚠️ Judge 429，{delay:.0f}s 后重试 ({attempt + 1}/{_JUDGE_MAX_RETRIES})")
+                time.sleep(delay)
+        raise last_exc
+
+    async def a_generate(self, prompt, schema=None):
+        last_exc = None
+        async with self._lock:
+            for attempt in range(_JUDGE_MAX_RETRIES):
+                try:
+                    result = await self._complete_async(prompt, schema)
+                    await asyncio.sleep(0.5)
+                    return result
+                except Exception as e:
+                    last_exc = e
+                    if not _is_rate_limit(e) or attempt == _JUDGE_MAX_RETRIES - 1:
+                        raise
+                    delay = _retry_delay(e, attempt)
+                    print(f"⚠️ Judge 429，{delay:.0f}s 后重试 ({attempt + 1}/{_JUDGE_MAX_RETRIES})")
+                    await asyncio.sleep(delay)
+        raise last_exc
 
     def get_model_name(self):
         return self._model
@@ -381,7 +475,7 @@ def generate_report(
     deepeval_results, deepeval_meta, retrieval_metrics,
     ragas_result, ragas_meta,
     regressions=None,
-    output_path="eval_report.md",
+    output_path=EVAL_REPORT_PATH,
 ):
     """合并 DeepEval + RAGAS + 检索指标，生成 Markdown 报告"""
     lines = []
@@ -520,6 +614,7 @@ def generate_report(
 
     # ---- 写文件 ----
     content = "\n".join(lines)
+    Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(content)
     print(f"\n✅ 评测报告已生成: {output_path}")
@@ -536,10 +631,9 @@ if __name__ == "__main__":
     # 检查上一次结果
     last_run = get_last_run(conn)
 
-    # DeepEval + 检索指标
-    deepeval_results, deepeval_meta, retrieval_metrics = run_full_evaluation()
-    # RAGAS
-    ragas_result, ragas_meta = run_ragas_batch()
+    records = collect_rag_outputs()
+    deepeval_results, deepeval_meta, retrieval_metrics = run_full_evaluation(records)
+    ragas_result, ragas_meta = run_ragas_batch(records)
 
     # 汇总本次分数
     de_scores = []

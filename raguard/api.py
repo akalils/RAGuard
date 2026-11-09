@@ -1,13 +1,19 @@
 """
 法律RAG API服务 - FastAPI
 """
+
+# Support both python -m and an absolute script path from MCP clients.
+import sys
+from pathlib import Path
+if __package__ in (None, ""):
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from fastapi import FastAPI
 from pydantic import BaseModel
 from typing import Optional
 
-from rag_pipeline import ask, load_vector_store, build_vector_store, load_documents, split_documents
-from config import CHROMA_DB_PATH
-from pathlib import Path
+from raguard.rag_pipeline import ask, load_vector_store, build_vector_store, load_documents, split_documents
+from raguard.config import CHROMA_DB_PATH
 
 app = FastAPI(title="法律法规智能问答API", version="1.0")
 

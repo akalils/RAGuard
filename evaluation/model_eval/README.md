@@ -28,16 +28,16 @@
 
 ```bash
 # 默认（5-shot，6 个学科）
-python model_eval/run_ceval.py
+python evaluation/model_eval/run_ceval.py
 
 # 指定模型 + zero-shot
-python model_eval/run_ceval.py --model gpt-5.4-nano --n_shot 0
+python evaluation/model_eval/run_ceval.py --model gpt-5.4-nano --n_shot 0
 
 # 只评测 3 个学科
-python model_eval/run_ceval.py --subjects computer_network operating_system college_math
+python evaluation/model_eval/run_ceval.py --subjects computer_network operating_system college_math
 
 # 评测 DeepSeek
-python model_eval/run_ceval.py --model deepseek-chat
+python evaluation/model_eval/run_ceval.py --model deepseek-chat
 ```
 
 ### 关键概念：Few-shot vs Zero-shot
@@ -51,7 +51,7 @@ C-Eval 官方推荐 **5-shot**，因为选择题有固定的答案格式（ABCD�
 
 ### 输出格式
 
-结果保存到 `model_eval/ceval_results/{model}_{n_shot}shot_{timestamp}.json`：
+结果保存到 `reports/model_eval/ceval_results/{model}_{n_shot}shot_{timestamp}.json`：
 
 ```json
 {
@@ -95,13 +95,13 @@ C-Eval 官方推荐 **5-shot**，因为选择题有固定的答案格式（ABCD�
 
 ```bash
 # 默认评测（target=judge=当前模型）
-python model_eval/run_mtbench.py
+python evaluation/model_eval/run_mtbench.py
 
 # 强模型当 judge，弱模型当 target
-python model_eval/run_mtbench.py --target gpt-5.4-nano --judge gpt-4o
+python evaluation/model_eval/run_mtbench.py --target gpt-5.4-nano --judge gpt-4o
 
 # 调试：只评测 3 个类别
-python model_eval/run_mtbench.py --limit 3
+python evaluation/model_eval/run_mtbench.py --limit 3
 ```
 
 ### 核心：LLM-as-Judge 评分逻辑
@@ -130,7 +130,7 @@ python model_eval/run_mtbench.py --limit 3
 
 ### 输出格式
 
-结果保存到 `model_eval/mtbench_results/{model}_{timestamp}.json`：
+结果保存到 `reports/model_eval/mtbench_results/{model}_{timestamp}.json`：
 
 ```json
 {
@@ -184,12 +184,12 @@ python model_eval/run_mtbench.py --limit 3
 
 ```bash
 # 1. 评测 C-Eval（约 1 分钟）
-python model_eval/run_ceval.py
+python evaluation/model_eval/run_ceval.py
 
 # 2. 评测 MT-Bench（约 3 分钟）
-python model_eval/run_mtbench.py
+python evaluation/model_eval/run_mtbench.py
 
 # 3. 查看结果
-ls model_eval/ceval_results/
-ls model_eval/mtbench_results/
+ls reports/model_eval/ceval_results/
+ls reports/model_eval/mtbench_results/
 ```
